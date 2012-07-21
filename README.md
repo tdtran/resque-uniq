@@ -20,14 +20,14 @@ Or install it yourself as:
 
 Make your job class extend `Resque::Plugins::UniqueJob`, like this
 
-   class BigJob
+    class BigJob
       extend Resque::Plugins::UniqueJob  # <--- add this line
       @queue = :big_job
 
       def self.perform
         # ...
       end
-   end
+    end
 
 ## Credits
 
