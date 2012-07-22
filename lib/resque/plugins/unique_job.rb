@@ -1,7 +1,6 @@
 module Resque
   module Plugins
     module UniqueJob
-      LOCK_AUTOEXPIRE_PERIOD = 21600 # 6 hours
       LOCK_NAME_PREFIX = 'lock'
       RUN_LOCK_NAME_PREFIX = 'running_'
 
@@ -43,8 +42,9 @@ module Resque
           Resque.redis.del "#{RUN_LOCK_NAME_PREFIX}#{lock_name}"
         end
         nx = Resque.redis.setnx(lock_name, Time.now.to_i)
-        ttl = defined?(@lock_autoexpire_period) ? @lock_autoexpire_period : LOCK_AUTOEXPIRE_PERIOD
-        Resque.redis.expire(lock_name, ttl) if ttl > 0
+        if defined?(@unique_lock_autoexpire) && @unique_lock_autoexpire > 0
+          Resque.redis.expire(lock_name, @unique_lock_autoexpire)
+        end
         nx
       end
 
