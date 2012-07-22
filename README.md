@@ -40,7 +40,7 @@ There is another lock, called _run lock_, which is being held during the executi
 a new job instance, _resque-uniq_ checks if there is any orphaned _run lock_. This way it can detect if Resque workers
 have crashed during job execution and left behind stale locks.
 
-You can tell `resque-uniq` to auto-expire job locks by setting `@unique_lock_autoexpire`
+You can tell _resque-uniq_ to auto-expire job locks by setting `@unique_lock_autoexpire`
 
     class BigJob
       extend Resque::Plugins::UniqueJob
