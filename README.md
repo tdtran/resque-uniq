@@ -52,13 +52,12 @@ You can tell _resque-uniq_ to auto-expire job locks by setting `@unique_lock_aut
       end
     end
 
-This is usually not necessary, but you can if you want.
+Lock autoexpiration was necessary to protect against stale locks. With the new run lock trick you probably don't need it anymore.
 
 ## Credits
 
-There are several similar Resque plugins. We tried them all but for one reason or another they don't work reliably
-for us. We wrote our own version which we think works better for us. Nonetheless we would like to thank the authors
-of those plugins for inspiration.
+There are several similar Resque plugins. We tried them all but for one reason or another they didn't work reliably
+for us. Therefore we wrote our own version. Nonetheless we would like to thank the authors of those plugins for inspiration.
 
 ## Contributing
 
