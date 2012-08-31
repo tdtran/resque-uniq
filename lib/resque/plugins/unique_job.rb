@@ -27,10 +27,14 @@ module Resque
         return false unless Resque.redis.get(rlock)
 
         Resque.working.map {|w| w.job }.map do |item|
-          payload = item['payload']
-          klass = Resque::Job.constantize(payload['class'])
-          args = payload['args']
-          return false if rlock == klass.run_lock(*args)
+          begin
+            payload = item['payload']
+            klass = Resque::Job.constantize(payload['class'])
+            args = payload['args']
+            return false if rlock == klass.run_lock(*args)
+          rescue NameError
+            # unknown job class, ignore
+          end
         end
         true
       end
