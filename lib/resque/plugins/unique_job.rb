@@ -65,6 +65,10 @@ module Resque
         end
       end
 
+      def after_dequeue_lock(*args)
+        Resque.redis.del(run_lock(*args))
+        Resque.redis.del(lock(*args))
+      end
 
       private
 
