@@ -46,8 +46,9 @@ module Resque
           Resque.redis.del "#{RUN_LOCK_NAME_PREFIX}#{lock_name}"
         end
         nx = Resque.redis.setnx(lock_name, Time.now.to_i)
-        if defined?(@unique_lock_autoexpire) && @unique_lock_autoexpire > 0
-          Resque.redis.expire(lock_name, @unique_lock_autoexpire)
+        ttl = instance_variable_get(:@unique_lock_autoexpire) || respond_to?(:unique_lock_autoexpire) && unique_lock_autoexpire
+        if ttl && ttl > 0
+          Resque.redis.expire(lock_name, ttl)
         end
         nx
       end
@@ -64,6 +65,10 @@ module Resque
         end
       end
 
+      def after_dequeue_lock(*args)
+        Resque.redis.del(run_lock(*args))
+        Resque.redis.del(lock(*args))
+      end
 
       private
 
