@@ -16,6 +16,15 @@ class UniqueJobTest < Test::Unit::TestCase
     def self.perform(param) ; end
   end
 
+  class AutoexpireLockJobBase
+    extend Resque::Plugins::UniqueJob
+    def self.queue ; :job_test ; end
+    def self.unique_lock_autoexpire ; 1 ; end
+    def self.perform(param) ; end
+  end
+
+  class ExtendedAutoExpireLockJob < AutoexpireLockJobBase ; end
+
   def setup
     Resque.remove_queue(Resque.queue_from_class(Job))
     Resque.redis.keys('*:UniqueJobTest::*').each {|k| Resque.redis.del(k) }
@@ -51,6 +60,13 @@ class UniqueJobTest < Test::Unit::TestCase
     sleep 2
     Resque.enqueue(AutoexpireLockJob, 123)
     assert_equal 2, Resque.size(Resque.queue_from_class(AutoexpireLockJob))
+  end
+
+  def test_extended_autoexpire_lock
+    Resque.enqueue(ExtendedAutoExpireLockJob, 123)
+    sleep 2
+    Resque.enqueue(ExtendedAutoExpireLockJob, 123)
+    assert_equal 2, Resque.size(Resque.queue_from_class(ExtendedAutoExpireLockJob))
   end
 
 end
