@@ -45,12 +45,14 @@ module Resque
           Resque.redis.del lock_name
           Resque.redis.del "#{RUN_LOCK_NAME_PREFIX}#{lock_name}"
         end
-        nx = Resque.redis.setnx(lock_name, Time.now.to_i)
-        ttl = instance_variable_get(:@unique_lock_autoexpire) || respond_to?(:unique_lock_autoexpire) && unique_lock_autoexpire
-        if ttl && ttl > 0
-          Resque.redis.expire(lock_name, ttl)
+        not_exist = Resque.redis.setnx(lock_name, Time.now.to_i)
+        if not_exist
+          ttl = instance_variable_get(:@unique_lock_autoexpire) || respond_to?(:unique_lock_autoexpire) && unique_lock_autoexpire
+          if ttl && ttl > 0
+            Resque.redis.expire(lock_name, ttl)
+          end
         end
-        nx
+        not_exist
       end
 
       def around_perform_lock(*args)
