@@ -61,7 +61,6 @@ module Resque
         end
         not_exist = Resque.redis.setnx(lock_name, Time.now.to_i)
         if not_exist
-          ttl = instance_variable_get(:@unique_lock_autoexpire) || respond_to?(:unique_lock_autoexpire) && unique_lock_autoexpire
           if ttl && ttl > 0
             Resque.redis.expire(lock_name, ttl)
           end
