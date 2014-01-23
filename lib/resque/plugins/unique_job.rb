@@ -57,7 +57,7 @@ module Resque
         lock_name = lock(*args)
         if stale_lock? lock_name
           Resque.redis.del lock_name
-          Resque.redis.del "#{RUN_LOCK_NAME_PREFIX}#{lock_name}"
+          Resque.redis.del run_lock_from_lock(lock)
         end
         not_exist = Resque.redis.setnx(lock_name, Time.now.to_i)
         if not_exist
