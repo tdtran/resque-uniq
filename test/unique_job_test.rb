@@ -27,6 +27,7 @@ class UniqueJobTest < Test::Unit::TestCase
 
   def setup
     Resque.remove_queue(Resque.queue_from_class(Job))
+    Resque.remove_queue(Resque.queue_from_class(AutoexpireLockJob))
     Resque.redis.keys('*:UniqueJobTest::*').each {|k| Resque.redis.del(k) }
   end
 
@@ -93,4 +94,9 @@ class UniqueJobTest < Test::Unit::TestCase
     assert_equal 2, Resque.size(Resque.queue_from_class(ExtendedAutoExpireLockJob))
   end
 
+  def test_cleans_up_old_lock_during_enqueue
+    Resque.redis.set(AutoexpireLockJob.lock(123), Time.now.to_i + 100)
+    Resque.enqueue(AutoexpireLockJob, 123)
+    assert_equal 1, Resque.size(Resque.queue_from_class(AutoexpireLockJob))
+  end
 end

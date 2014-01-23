@@ -44,12 +44,13 @@ module Resque
       end
 
       def get_lock(lock)
-        set_time = Resque.redis.get(lock)
+        lock_value = Resque.redis.get(lock)
+        set_time = lock_value.to_i
         if ttl && set_time && (set_time > Time.now.to_i - ttl)
           Resque.redis.del(lock)
           nil
         else
-          set_time
+          lock_value
         end
       end
 
@@ -57,7 +58,7 @@ module Resque
         lock_name = lock(*args)
         if stale_lock? lock_name
           Resque.redis.del lock_name
-          Resque.redis.del run_lock_from_lock(lock)
+          Resque.redis.del run_lock_from_lock(lock_name)
         end
         not_exist = Resque.redis.setnx(lock_name, Time.now.to_i)
         if not_exist
