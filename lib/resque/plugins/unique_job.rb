@@ -56,7 +56,9 @@ module Resque
       end
 
       def around_perform_lock(*args)
+        # we must calculate the lock name before executing job's perform method, it can modify *args
         jlock = lock(*args)
+
         rlock = run_lock(*args)
         Resque.redis.set(rlock, Time.now.to_i)
 
