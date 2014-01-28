@@ -21,10 +21,10 @@ module Resque
       end
 
       def stale_lock?(lock)
-        return false unless Resque.redis.get(lock)
+        return false unless get_lock(lock)
 
         rlock = run_lock_from_lock(lock)
-        return false unless Resque.redis.get(rlock)
+        return false unless get_lock(rlock)
 
         Resque.working.map {|w| w.job }.map do |item|
           begin
@@ -39,15 +39,29 @@ module Resque
         true
       end
 
+      def ttl
+        instance_variable_get(:@unique_lock_autoexpire) || respond_to?(:unique_lock_autoexpire) && unique_lock_autoexpire
+      end
+
+      def get_lock(lock)
+        lock_value = Resque.redis.get(lock)
+        set_time = lock_value.to_i
+        if ttl && set_time && (set_time > Time.now.to_i - ttl)
+          Resque.redis.del(lock)
+          nil
+        else
+          lock_value
+        end
+      end
+
       def before_enqueue_lock(*args)
         lock_name = lock(*args)
         if stale_lock? lock_name
           Resque.redis.del lock_name
-          Resque.redis.del "#{RUN_LOCK_NAME_PREFIX}#{lock_name}"
+          Resque.redis.del run_lock_from_lock(lock_name)
         end
         not_exist = Resque.redis.setnx(lock_name, Time.now.to_i)
         if not_exist
-          ttl = instance_variable_get(:@unique_lock_autoexpire) || respond_to?(:unique_lock_autoexpire) && unique_lock_autoexpire
           if ttl && ttl > 0
             Resque.redis.expire(lock_name, ttl)
           end
