@@ -46,7 +46,7 @@ module Resque
       def get_lock(lock)
         lock_value = Resque.redis.get(lock)
         set_time = lock_value.to_i
-        if ttl && set_time && (set_time > Time.now.to_i - ttl)
+        if ttl && lock_value && (set_time < Time.now.to_i - ttl)
           Resque.redis.del(lock)
           nil
         else
