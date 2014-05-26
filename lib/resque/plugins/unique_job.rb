@@ -20,6 +20,29 @@ module Resque
         rlock.sub(/^#{RUN_LOCK_NAME_PREFIX}/, '')
       end
 
+      def payload_class(camel_cased_word)
+        camel_cased_word = camel_cased_word.to_s
+
+        if camel_cased_word.include?('-')
+          camel_cased_word = classify(camel_cased_word)
+        end
+
+        names = camel_cased_word.split('::')
+        names.shift if names.empty? || names.first.empty?
+
+        constant = Object
+        names.each do |name|
+          args = Module.method(:const_get).arity != 1 ? [false] : []
+
+          if constant.const_defined?(name, *args)
+            constant = constant.const_get(name)
+          else
+            constant = constant.const_missing(name)
+          end
+        end
+        constant
+      end
+
       def stale_lock?(lock)
         return false unless get_lock(lock)
 
@@ -29,7 +52,7 @@ module Resque
         Resque.working.map {|w| w.job }.map do |item|
           begin
             payload = item['payload']
-            klass = Resque::Job.constantize(payload['class'])
+            klass = payload_class(payload['class'])
             args = payload['args']
             return false if rlock == klass.run_lock(*args)
           rescue NameError
