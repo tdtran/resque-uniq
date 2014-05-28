@@ -97,4 +97,21 @@ class UniqueJobTest < Test::Unit::TestCase
     Resque.enqueue(AutoexpireLockJob, 123)
     assert_equal 1, Resque.size(Resque.queue_from_class(AutoexpireLockJob))
   end
+
+  def test_payload_class
+    klass = Job.payload_class("UniqueJobTest::AutoexpireLockJob")
+    assert_equal klass, AutoexpireLockJob
+  end
+
+  def test_not_stale_lock
+    Resque.redis.set(Job.lock("hello"), Time.now.to_i)
+    assert_equal false, Job.stale_lock?(Job.lock("hello"))
+  end
+
+  def test_stale_lock
+    Resque.redis.set(Job.lock("hello"), Time.now.to_i)
+    Resque.redis.set(Job.run_lock("hello"), Time.now.to_i)
+    assert_equal true, Job.stale_lock?(Job.lock("hello"))
+  end
+
 end
