@@ -127,10 +127,8 @@ module Resque
           s = []
           obj.each { |a| s << obj_to_string(a) }
           s.to_s
-        when Time
-          obj.to_i
         else
-          obj.to_s
+          Resque.encode(obj)
         end
       end
     end

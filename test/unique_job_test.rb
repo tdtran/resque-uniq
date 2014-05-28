@@ -123,7 +123,7 @@ class UniqueJobTest < Test::Unit::TestCase
     assert_equal true, Job.stale_lock?(Job.lock("hello"))
   end
 
- def test_cant_enqueue_another_job_if_worker_still_working
+  def test_cant_enqueue_another_job_if_worker_still_working
     queue = Resque.queue_from_class(RepeaterJob)
     Resque.enqueue(RepeaterJob, "hello")
     assert_equal 1, Resque.size(queue)
@@ -135,5 +135,21 @@ class UniqueJobTest < Test::Unit::TestCase
     worker.perform(job)
 
     assert_equal 0, Resque.size(queue), "Expected queue to be empty"
+  end
+
+  def test_locks_with_object_args
+    time = Time.now
+    queue = Resque.queue_from_class(Job)
+
+    Resque.enqueue(Job, "hello", time)
+    assert_equal 1, Resque.size(queue)
+
+    worker = Resque::Worker.new(queue)
+    job = worker.reserve
+    worker.perform(job)
+    assert_equal 0, Resque.size(queue)
+
+    Resque.enqueue(Job, "hello", time)
+    assert_equal 1, Resque.size(queue)
   end
 end
