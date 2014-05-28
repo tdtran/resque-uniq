@@ -25,6 +25,15 @@ class UniqueJobTest < Test::Unit::TestCase
 
   class ExtendedAutoExpireLockJob < AutoexpireLockJobBase ; end
 
+  class RepeaterJob
+    extend Resque::Plugins::UniqueJob
+    @queue = :job_test
+
+    def self.perform(param)
+      Resque.enqueue(RepeaterJob, "hello")
+    end
+  end
+
   def setup
     Resque.redis.flushdb
   end
@@ -114,4 +123,17 @@ class UniqueJobTest < Test::Unit::TestCase
     assert_equal true, Job.stale_lock?(Job.lock("hello"))
   end
 
+ def test_cant_enqueue_another_job_if_worker_still_working
+    queue = Resque.queue_from_class(RepeaterJob)
+    Resque.enqueue(RepeaterJob, "hello")
+    assert_equal 1, Resque.size(queue)
+
+    worker = Resque::Worker.new(queue)
+    job = worker.reserve
+    worker.register_worker
+    worker.working_on job
+    worker.perform(job)
+
+    assert_equal 0, Resque.size(queue), "Expected queue to be empty"
+  end
 end
